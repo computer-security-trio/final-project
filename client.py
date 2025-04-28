@@ -15,7 +15,7 @@ def receive_messages(client_socket):
                 print(f"{message[7:].strip()}")
             else:
                 # Print regular message
-                print(f"Received: {message}")
+                print(f"{message}")
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -27,6 +27,9 @@ def main():
     # Connect to the server
     client.connect(('localhost', port))
     print("Connected to server!")
+    # Prompt for username
+    username = input("Enter your username: ")
+    client.send(username.encode())
 
     # Start thread to receive messages
     threading.Thread(target=receive_messages, args=(client,)).start()

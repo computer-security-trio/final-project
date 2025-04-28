@@ -3,12 +3,12 @@ import socket
 import threading
 
 # Function to handle communication from one client to another
-def handle_client(source_client, destination_client):
+def handle_client(source_client, destination_client, username="Anonymous"):
     while True:
         try:
             data = source_client.recv(1024)
             if not data:
-                print("A client disconnected.")
+                print(f"{username} disconnected.")
                 try: 
                     destination_client.send(b"STATUS: Other client disconnected.")
                 except:
@@ -16,13 +16,14 @@ def handle_client(source_client, destination_client):
                 break # No data means the client has closed the connection
             decoded_data = data.decode().strip()
             if decoded_data.lower() == 'exit':
-                print("Client has exited the chat.")
+                print(f"{username} has exited the chat.")
                 try:
                     destination_client.send(b"STATUS: Other client has exited the chat.")
                 except:
                     pass
                 break
-            destination_client.send(data) # Send data to the other client
+            message_to_send = f"{username}: {decoded_data}"
+            destination_client.send(message_to_send.encode()) # Send data to the other client
         except Exception as e:
             print(f"Error: {e}")
             break
@@ -49,9 +50,15 @@ def main():
     # Accept 2 clients
     clientA, addrA = s.accept()
     print("Client A has connected from:", addrA)
+    #clientA.send(b"STATUS: Please enter your username:")
+    usernameA = clientA.recv(1024).decode().strip()
+    print(f"Client A's username is: {usernameA}")
     clientA.send(b"STATUS: Waiting for client B to connect...")
     clientB, addrB = s.accept()
     print("Client B has connected from:", addrB)
+    #clientB.send(b"STATUS: Please enter your username:")
+    usernameB = clientB.recv(1024).decode().strip()
+    print(f"Client B's username is: {usernameB}")
 
     # Notify both clients that they are connected
     ready_message = b"STATUS: Both clients have connected. You can start chatting! (enter \"exit\" to quit)"
@@ -59,8 +66,8 @@ def main():
     clientB.send(ready_message)
 
     # Create a thread for each client
-    threadA = threading.Thread(target=handle_client, args=(clientA, clientB))
-    threadB = threading.Thread(target=handle_client, args=(clientB, clientA))
+    threadA = threading.Thread(target=handle_client, args=(clientA, clientB, usernameA))
+    threadB = threading.Thread(target=handle_client, args=(clientB, clientA, usernameB))
 
     # Start the threads
     threadA.start()
