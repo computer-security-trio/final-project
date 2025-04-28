@@ -27,8 +27,11 @@ def handle_client(source_client, destination_client, username="Anonymous"):
         except Exception as e:
             print(f"Error: {e}")
             break
-    source_client.close()
-    destination_client.close()
+    # Close source client
+    try:
+        source_client.close()
+    except Exception as e:
+        print(f"Error closing source client: {e}")
 
 def main():
     # Create a socket object

@@ -2,6 +2,9 @@
 import socket
 import threading
 
+# Stop event
+stop_event = threading.Event()
+
 # Function to receive messages from the server
 def receive_messages(client_socket):
     while True:
@@ -9,6 +12,7 @@ def receive_messages(client_socket):
             message = client_socket.recv(1024).decode()
             if not message:
                 print("Server disconnected.")
+                stop_event.set()
                 break
             if message.startswith("STATUS:"):
                 # Print status message
@@ -17,8 +21,14 @@ def receive_messages(client_socket):
                 # Print regular message
                 print(f"{message}")
         except Exception as e:
-            print(f"Error receiving message: {e}")
+            if not stop_event.is_set():
+                print(f"Error receiving message: {e}")
             break
+    # Close the socket
+    try:
+        client_socket.close()
+    except:
+        pass
 
 def main():
     client = socket.socket()
@@ -34,13 +44,15 @@ def main():
     # Start thread to receive messages
     threading.Thread(target=receive_messages, args=(client,)).start()
 
-    while True:
+    while not stop_event.is_set():
         try:
             message = input()
             if message.lower() == 'exit':
+                stop_event.set()
                 break
             client.send(message.encode())
         except KeyboardInterrupt:
+            stop_event.set()
             print("\nExiting...")
             break
     client.close()
