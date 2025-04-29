@@ -1,6 +1,3 @@
-#Ephemeral Key encryption
-#Generate different cipher text even if they give same input 
-
 import hashlib #this is where SHA256 lives -> could potentially use instead of cryptography hashes
 from cryptography.hazmat.primitives.asymmetric import ec #elliptic curve library (ECDH -> elliptic curve diffie-hellman)
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF #Hash Key Derivation Function -> turn our key into an AES key
@@ -14,12 +11,8 @@ import os #Generate random numbers (nonce)
 # 256 -> we're using a SHA256, so use a 256-bit key space curve
 # R1 -> first recommended version of the 256
 # SECP256R1() is also called prime256v1 in other systems
-# Bob's key pair is static and will last the duration of their conversation
 
-# This needs to be in client
-password = "password"
-
-def create_private_key(password):
+def create_key(password):
     if password is None:
         # Generate random private key from curve
         private_key = ec.generate_private_key(ec.SECP256R1())
@@ -36,22 +29,18 @@ def create_private_key(password):
         private_key = ec.derive_private_key(private_int, ec.SECP256R1())
         print("[*] Derived private key from password")
 
-    return private_key
+    # Serialize (save) public key so other user can use it
+    public_key = private_key.public_key() # every private key automatically has a corresponding public key
+    public_bytes = public_key.public_bytes(
+        encoding=serialization.Encoding.X962, # standard format for elliptic curves
+        format=serialization.PublicFormat.UncompressedPoint # save x,y coordinates
+    )
 
-private_key = create_private_key(password)
+    return private_key, public_bytes
 
-# Serialize (save) public key so Alice can use it
-public_key = private_key.public_key() # every private key automatically has a corresponding public key
-public_bytes = public_key.public_bytes(
-    encoding=serialization.Encoding.X962, # standard format for elliptic curves
-    format=serialization.PublicFormat.UncompressedPoint # save x,y coordinates
-)
-
-# Here, get message (from socket communication) to encrypt
-message = "message" # temp value for testing
 
 # Ecnryption function
-# Alice has bob's public key and sends a message
+# Users share a public key and sends a message
 def encrypt(message: bytes, public_key_bytes):
     # Recreat Bob's public key from it's bytes
     public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), public_key_bytes)
@@ -115,7 +104,10 @@ def decrypt_message(ephemeral_public_bytes, nonce, ciphertext, private_key):
     # Return the plaintext! (original message)
     return plaintext
 
-# Now let's test these functions
+
+# Testing!
+password = "password"
+private_key, public_bytes = create_key(password)
 message = b"hello world" # b -> byte string. AES works with byte strings, which is why encrytion takes bytes
 ephemeral_public, nonce, ciphertext = encrypt(message, public_bytes)
 plaintext = decrypt_message(ephemeral_public, nonce, ciphertext, private_key)
