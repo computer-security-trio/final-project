@@ -24,7 +24,6 @@ def handle_client(source_client, destination_client, username="Anonymous"):
                         pass
                     break
             except UnicodeDecodeError:
-                print(f"Failed to decode data from {username}.")
                 pass
             destination_client.send(data) # Send data to the other client
         except Exception as e:
