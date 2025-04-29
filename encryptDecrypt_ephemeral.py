@@ -104,7 +104,7 @@ def decrypt(ephemeral_public_bytes, nonce, ciphertext, private_key):
     # Return the plaintext! (original message)
     return plaintext
 
-
+"""
 # Testing!
 password = "password"
 private_key, public_bytes = create_key(password)
@@ -118,6 +118,8 @@ print(f"Encrypted hex: {ciphertext.hex()}")
 print(f"Decrypted: {plaintext.decode()}")
 # use .decode() to get byte string into a regular string
 # reverse is .encode() to get str -> bytes
+"""
+
 
 # Extra security: add random salt
 """
