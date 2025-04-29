@@ -56,6 +56,7 @@ def main():
     #clientA.send(b"STATUS: Please enter your username:")
     usernameA = clientA.recv(1024).decode().strip()
     print(f"Client A's username is: {usernameA}")
+
     clientA.send(b"STATUS: Waiting for client B to connect...")
     clientB, addrB = s.accept()
     print("Client B has connected from:", addrB)
