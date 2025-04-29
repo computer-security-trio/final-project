@@ -14,16 +14,19 @@ def handle_client(source_client, destination_client, username="Anonymous"):
                 except:
                     pass
                 break # No data means the client has closed the connection
-            decoded_data = data.decode().strip()
-            if decoded_data.lower() == 'exit':
-                print(f"{username} has exited the chat.")
-                try:
-                    destination_client.send(b"STATUS: Other client has exited the chat.")
-                except:
-                    pass
-                break
-            message_to_send = f"{username}: {decoded_data}"
-            destination_client.send(message_to_send.encode()) # Send data to the other client
+            try:
+                decoded_data = data.decode().strip()
+                if decoded_data.lower() == 'exit':
+                    print(f"{username} has exited the chat.")
+                    try:
+                        destination_client.send(b"STATUS: Other client has exited the chat.")
+                    except:
+                        pass
+                    break
+            except UnicodeDecodeError:
+                print(f"Failed to decode data from {username}.")
+                pass
+            destination_client.send(data) # Send data to the other client
         except Exception as e:
             print(f"Error: {e}")
             break
