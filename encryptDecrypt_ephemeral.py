@@ -82,7 +82,7 @@ def encrypt(message: bytes, public_key_bytes):
 # Decryption function
 # Bob recieves the ciphertext, nonce, and serialized ephemeral public key bytes
 # Bob uses his private key to reconstruct Alice's message
-def decrypt_message(ephemeral_public_bytes, nonce, ciphertext, private_key):
+def decrypt(ephemeral_public_bytes, nonce, ciphertext, private_key):
     # Recreate sender's ephemeral public key
     ephemeral_public = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), ephemeral_public_bytes)
 
@@ -110,7 +110,7 @@ password = "password"
 private_key, public_bytes = create_key(password)
 message = b"hello world" # b -> byte string. AES works with byte strings, which is why encrytion takes bytes
 ephemeral_public, nonce, ciphertext = encrypt(message, public_bytes)
-plaintext = decrypt_message(ephemeral_public, nonce, ciphertext, private_key)
+plaintext = decrypt(ephemeral_public, nonce, ciphertext, private_key)
 
 print(f"Original: {message.decode()}")
 print(f"Encrypted: {ciphertext}")
