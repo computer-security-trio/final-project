@@ -10,13 +10,11 @@ import os #Generate random numbers (nonce)
 # P -> "prime field", the math uses {numbers} mod [a prime number]
 # 256 -> we're using a SHA256, so use a 256-bit key space curve
 # R1 -> first recommended version of the 256
-# SECP256R1() is also called prime256v1 in other systems
 
 def create_key(password):
     if password is None:
         # Generate random private key from curve
         private_key = ec.generate_private_key(ec.SECP256R1())
-        print("[*] Generated random private key")
     else:
         # Hash the password
         password_bytes = password.encode('utf-8')  # Turn string into bytes
@@ -27,7 +25,6 @@ def create_key(password):
         
         # Derive private key from that integer
         private_key = ec.derive_private_key(private_int, ec.SECP256R1())
-        print("[*] Derived private key from password")
 
     # Serialize (save) public key so other user can use it
     public_key = private_key.public_key() # every private key automatically has a corresponding public key
@@ -35,7 +32,6 @@ def create_key(password):
         encoding=serialization.Encoding.X962, # standard format for elliptic curves
         format=serialization.PublicFormat.UncompressedPoint # save x,y coordinates
     )
-
     return private_key, public_bytes
 
 
