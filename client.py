@@ -73,7 +73,7 @@ def main():
     # Prompt for password
     has_password = input("Do you have a password? (yes/no): ").strip().lower()
     if has_password == 'yes':
-        shared_password = input("Enter your password: ") #TODO: Encrypt password
+        shared_password = input("Enter your password: ")
     else:
         print("You are now in insecure messaging.")
     private_key, public_key = create_key(shared_password) # Placeholder for key generation
