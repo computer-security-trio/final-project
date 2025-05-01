@@ -44,7 +44,7 @@ def main():
     port = 12345
 
     # Bind the socket to the port
-    # Empty string allows other machines to connect
+    # Empty string indicates localhost
     s.bind(('', port))
     print("Socket bound to port", port)
 
