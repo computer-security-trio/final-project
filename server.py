@@ -58,7 +58,7 @@ def main():
     print("Created socket object successfully")
 
     # Reserve an arbitrary port for the service
-    port = 12345
+    port = 12346
 
     # Bind the socket to the port
     # Empty string indicates localhost

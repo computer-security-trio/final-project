@@ -3,13 +3,30 @@ from cryptography.hazmat.primitives.asymmetric import ec #elliptic curve library
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF #Hash Key Derivation Function -> turn our key into an AES key
 from cryptography.hazmat.primitives import hashes, serialization #hashes is where SHA256 lives; serialization is for saving and loading public/private keys
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM #where the AES-GCM function resides
-import os #Generate random numbers (nonce)
+import os #Generate random numbers (nonce) 
+from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature, decode_dss_signature
 
 # ec.SECP256R1() -> a specific elliptic curve
 # "Standards for Efficient Cryptography" -> SEC standardized this curve (govt-approved)
 # P -> "prime field", the math uses {numbers} mod [a prime number]
 # 256 -> we're using a SHA256, so use a 256-bit key space curve
 # R1 -> first recommended version of the 256
+
+def generate_signing_keys():
+    signature = ec.generate_private_key(ec.SECP256R1())
+    verify = signature.public_key()
+    return signature, verify
+    
+def sign_message(signing_key, message: bytes) -> bytes:
+    msg = signing_key.sign(message, ec.ECDSA(hashes.SHA256()))
+    return msg
+
+def verify_signature(signature: bytes, message: bytes, verifying_key):
+    try:
+        verifying_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
+        return True
+    except Exception:
+        return False
 
 def create_key(password):
     if password is None:
