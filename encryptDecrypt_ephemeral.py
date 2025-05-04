@@ -56,19 +56,19 @@ def create_key(password):
     return private_key, public_bytes
 
 def derive_shared_key(private_key, peer_public_bytes):
-    # Deserialize the peer's public key
+    # Deserialize key
     peer_public_key = ec.EllipticCurvePublicKey.from_encoded_point(
         ec.SECP256R1(), peer_public_bytes
     )
 
-    # Perform ECDH key exchange
+    # ECDH key exchange
     shared_secret = private_key.exchange(ec.ECDH(), peer_public_key)
 
-    # Derive a 256-bit AES key from the shared secret using HKDF
+    # Derive AES key from shared key using hash-based key derivation function
     derived_key = HKDF(
-        algorithm=hashes.SHA256(),
-        length=32,  # 256 bits
-        salt=None,  # Optional: add salt if desired
+        algorithm=hashes.SHA256(), # SHA256 for hash algorithm
+        length=32,  # 32-byte key (=256 bits)
+        salt=None,  # Currently none, but we could add salt to add another layer of security later
         info=b'handshake data',
     ).derive(shared_secret)
 
