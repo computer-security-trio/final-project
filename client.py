@@ -145,12 +145,9 @@ def main():
             if (sent_counter) == 0 :
                 # Conditional to ensure clients haven't communicated yet
                 if has_password == 'no' and (sent_counter + received_counter) == 0:
-                    # Send public key to server
-                    tmp = input("Would you like to send your public key as in do you trust this channel? (yes/no). : ").strip().lower()
-                 
-                    if tmp == 'yes':
-                        client.send(b"PUBLIC_KEY:"+public_key)
-                        print("Sent public key to server.")
+ 
+                    client.send(b"PUBLIC_KEY:"+public_key)
+                    print("Sent public key to server.")
                      
                     # Waits for the server to send its peer's public key
                     while dh_secure["shared_key"] is None:
@@ -159,40 +156,6 @@ def main():
                             new_client_thread.start()
 
             message = input(f"{username}: ")
-
-            # Conditional that refreshes keys every 3 messages
-            # no password option only
-            if ((sent_counter ) % 3 == 0) and has_password == 'no' and sent_counter > 0:
-                # Resetting counters
-                sent_counter = 0
-                received_counter = 0
-                print("Refreshing keys.")
-
-                # Generating new keys
-                private_key, public_key = create_key(None)
-                dh_secure["private_key"] = private_key 
-
-                # Sending new public key to server
-                client.send(b"PUBLIC_KEY:"+public_key) 
-                print("Sent public key to server.")
-                
-            # Conditional for password option
-            # Refreshes every message
-            elif (has_password == 'yes' and sent_counter > 0 or received_counter > 0):
-                # Generates random string
-                random_string = ''.join(random.choices(string.ascii_letters, k=12))
-
-                # Generates new keys based on random string
-                private_key, public_key = create_key(random_string)
-                dh_secure["private_key"] = private_key
-                dh_secure["public_key"] = public_key
-              
-                update_message = f"UPDATED_PASS:{random_string}".encode() 
-               
-                # Sends updated string to server
-                client.send(update_message)
-                time.sleep(0.2) 
-                
             
             sent_counter += 1 
             if message.lower() == 'exit':

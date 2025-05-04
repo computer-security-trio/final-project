@@ -11,6 +11,7 @@ def handle_client(source_client, destination_client, username="Anonymous"):
     while True:
         try:
             data = source_client.recv(8192)
+            print(data)
             if not data:
                 print(f"{username} disconnected.")
                 try: 
