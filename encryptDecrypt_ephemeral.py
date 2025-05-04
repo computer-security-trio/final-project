@@ -12,15 +12,19 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 # 256 -> we're using a SHA256, so use a 256-bit key space curve
 # R1 -> first recommended version of the 256
 
+# Signature generation and verification
+# Generate a signing key pair
 def generate_signing_keys():
     signature = ec.generate_private_key(ec.SECP256R1())
     verify = signature.public_key()
     return signature, verify
-    
+
+# Sign a message
 def sign_message(signing_key, message: bytes) -> bytes:
     msg = signing_key.sign(message, ec.ECDSA(hashes.SHA256()))
     return msg
 
+# Verify a signature by comparing it to the original message
 def verify_signature(signature: bytes, message: bytes, verifying_key):
     try:
         verifying_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
@@ -28,6 +32,7 @@ def verify_signature(signature: bytes, message: bytes, verifying_key):
     except Exception:
         return False
 
+# Create a private key from a password or generate a random one
 def create_key(password):
     if password is None:
         # Generate random private key from curve

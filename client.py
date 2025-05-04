@@ -10,12 +10,14 @@ import string
 from cryptography.hazmat.primitives import hashes, serialization #hashes is where SHA256 lives; serialization is for saving and loading public/private keys
 from cryptography.hazmat.primitives.asymmetric import ec #elliptic curve library (ECDH -> elliptic curve diffie-hellman)
 
-# Stop event
+# Counters for sent and received messages
 received_counter = 0
 sent_counter = 0
 
+# Stop event
 stop_event = threading.Event()
 
+# Object to hold Diffie-Hellman keys and shared key
 dh_secure = {
     "shared_key": None,
     "peer_public_key": None,
@@ -45,10 +47,12 @@ def receive_messages(client_socket, private_key=None):
     while not stop_event.is_set():
         try:
             received_bytes = client_socket.recv(8192)
+            # If no data is received, the server has disconnected
             if not received_bytes:
                 print("Server disconnected.")
                 stop_event.set()
                 break
+            # If the message is a public key, derive the shared key
             if received_bytes.startswith(b"PUBLIC_KEY:"):
                 peer_public_key = received_bytes[len(b"PUBLIC_KEY:"):]
                 shared_key = derive_shared_key(dh_secure["private_key"], peer_public_key)
@@ -58,10 +62,11 @@ def receive_messages(client_socket, private_key=None):
                 continue
             try:
                 message = received_bytes.decode()
+                # If the message is a server message, print it
                 if message.startswith("STATUS:") or message.startswith("[Server]"):
                     if message.startswith("STATUS:"):
                         print(f"{message[7:].strip()}")
-                    
+                # If the message is an updated password, update the keys
                 if "UPDATED_PASS:" in message:
                     random_string = message.split("UPDATED_PASS:")[1].strip()
                     private_key, public_key = create_key(random_string)
@@ -80,8 +85,9 @@ def receive_messages(client_socket, private_key=None):
                     else:
                         decrypted_message = decrypt(received_data.ephemeral_public, received_data.nonce, received_data.ciphertext, dh_secure["private_key"]) # Placeholder for decryption
                     
-                    received_counter +=1
+                    received_counter +=1 # Increment the received counter
 
+                    # Verify the signature
                     sender_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), received_data.verifying_key)
                     if verify_signature(received_data.signature, received_data.ciphertext, sender_key):
                         print("Signature verified successfully.")
@@ -90,7 +96,6 @@ def receive_messages(client_socket, private_key=None):
                     
                     print(f"{decrypted_message.decode()}")
                 except Exception as e:
-                    #print(message)
                     print(f"Failed to decrypt message: {e}")
                     continue
         except Exception as e:
@@ -106,7 +111,6 @@ def receive_messages(client_socket, private_key=None):
 def main():
     global sent_counter
     global received_counter
-    #print(counter)
     shared_password = None
     client = socket.socket()
     print("Created socket object successfully")
@@ -193,8 +197,7 @@ def main():
                 client.send(update_message)
                 time.sleep(0.2) 
                 
-            
-            sent_counter += 1 
+            sent_counter += 1  # Increment the sent counter
             if message.lower() == 'exit':
                 client.send(message.encode())
                 stop_event.set()
@@ -220,11 +223,13 @@ def main():
             stop_event.set()
             print("\nExiting...")
             break
+    # If the user has a password, wait for the receiving thread to finish
     if has_password == 'yes':
         # Wait for the receiving thread to finish
         client_thread.join()
         # Close the client socket
         client.close()
+    # Otherwise, wait for the new client thread to finish
     else:
         new_client_thread.join()
         client.close()
