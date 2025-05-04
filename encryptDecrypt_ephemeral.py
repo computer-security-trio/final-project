@@ -14,6 +14,10 @@ import os #Generate random numbers (nonce)
 def create_key(password):
     if password is None:
         # Generate random private key from curve
+        #fixed_bytes = b'This is a fixed test value 1234!!'
+        #fixed_hash = hashlib.sha256(fixed_bytes).digest()
+        #private_int = int.from_bytes(fixed_hash, 'big')
+        #private_key = ec.derive_private_key(private_int, ec.SECP256R1())
         private_key = ec.generate_private_key(ec.SECP256R1())
     else:
         # Hash the password
@@ -34,6 +38,24 @@ def create_key(password):
     )
     return private_key, public_bytes
 
+def derive_shared_key(private_key, peer_public_bytes):
+    # Deserialize the peer's public key
+    peer_public_key = ec.EllipticCurvePublicKey.from_encoded_point(
+        ec.SECP256R1(), peer_public_bytes
+    )
+
+    # Perform ECDH key exchange
+    shared_secret = private_key.exchange(ec.ECDH(), peer_public_key)
+
+    # Derive a 256-bit AES key from the shared secret using HKDF
+    derived_key = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,  # 256 bits
+        salt=None,  # Optional: add salt if desired
+        info=b'handshake data',
+    ).derive(shared_secret)
+
+    return derived_key  # Use this key with AES-GCM for encrypt/decrypt
 
 # Ecnryption function
 # Users share a public key and sends a message
@@ -92,6 +114,69 @@ def decrypt(ephemeral_public_bytes, nonce, ciphertext, private_key):
         salt=None,
         info=b'handshake data'
     ).derive(shared_key)
+
+    # Decrypt the message
+    aesgcm = AESGCM(derived_AES_key)
+    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+
+    # Return the plaintext! (original message)
+    return plaintext
+
+def encrypt(message: bytes, public_key_bytes):
+    # Recreat Bob's public key from it's bytes
+    public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), public_key_bytes)
+        # Sending in the bytes instead of the key... not sure why. 
+        # We could pass the key in directly, skip serialization? 
+        # Depending on how the code gets combined
+
+    # Generate ephemeral key pair (to ensure each ciphertext is unique)
+    ephemeral_private = ec.generate_private_key(ec.SECP256R1())
+    ephemeral_public = ephemeral_private.public_key()
+
+    # Shared secret key via ECDH (elliptic curve diffie-hellman)
+    shared_key = ephemeral_private.exchange(ec.ECDH(), public_key)
+
+    # Derive AES key from shared key using hash-based key derivation function
+    derived_AES_key = HKDF(
+        algorithm=hashes.SHA256(), # SHA256 for hash algorithm
+        length=32, # 32-byte key (=256 bits)
+        salt=None, # Currently none, but we could add salt to add another layer of security later
+        info=b'handshake data'
+    ).derive(shared_key)
+
+    # Encrypt using AES-GCM
+    # GCM provides confidentiality and integrity
+    aesgcm = AESGCM(derived_AES_key)
+    nonce = os.urandom(12) # Generate a random 12-byte nonce
+    ciphertext = aesgcm.encrypt(nonce, message, None) # use AES-GCM to generate ciphertext from message
+
+    # Serialize ephemeral public key to send outside of function (to Alice or Bob)
+    ephemeral_public_bytes = ephemeral_public.public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=serialization.PublicFormat.UncompressedPoint
+    )
+
+    # Return ephemeral public key, nonce, and ciphertext
+    return ephemeral_public_bytes, nonce, ciphertext
+
+
+# Decryption function
+# Bob recieves the ciphertext, nonce, and serialized ephemeral public key bytes
+# Bob uses his private key to reconstruct Alice's message
+def encryptInsecureChannel(message: bytes, shared_key):
+
+    # Encrypt the message
+    aesgcm = AESGCM(shared_key)
+    nonce = os.urandom(12) 
+    ciphertext = aesgcm.encrypt(nonce, message, None) 
+    return nonce, ciphertext
+
+
+def decryptInsecureChannel(nonce, ciphertext, shared_key):
+    # Recreate sender's ephemeral public key
+    #shared_key = private_key.exchange(ec.ECDH(), ephemeral_public)
+    derived_AES_key = shared_key
+    # Derive AES key
 
     # Decrypt the message
     aesgcm = AESGCM(derived_AES_key)

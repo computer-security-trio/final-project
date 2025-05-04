@@ -2,11 +2,15 @@
 import socket
 import threading
 
+public_keys = {}
+usernames = {}
+
+
 # Function to handle communication from one client to another
 def handle_client(source_client, destination_client, username="Anonymous"):
     while True:
         try:
-            data = source_client.recv(1024)
+            data = source_client.recv(8192)
             if not data:
                 print(f"{username} disconnected.")
                 try: 
@@ -14,6 +18,18 @@ def handle_client(source_client, destination_client, username="Anonymous"):
                 except:
                     pass
                 break # No data means the client has closed the connection
+            if data.startswith(b"PUBLIC_KEY:"):
+                # Handle public key exchange
+                print(f"[SERVER] Received public key from {source_client}")
+                pubkey = data[len(b"PUBLIC_KEY:"):]
+                public_keys[source_client] = pubkey
+
+                if destination_client in public_keys:
+                    source_client.send(b"PUBLIC_KEY:" + public_keys[destination_client])
+                    destination_client.send(b"PUBLIC_KEY:" + pubkey)
+            if data.startswith(b"UPDATED_PASS:"):
+                new_password = data[len(b"UPDATED_PASS:"):]
+                destination_client.send(b"UPDATED_PASS:" + new_password)
             try:
                 decoded_data = data.decode().strip()
                 if decoded_data.lower() == 'exit':
@@ -25,7 +41,8 @@ def handle_client(source_client, destination_client, username="Anonymous"):
                     break
             except UnicodeDecodeError:
                 pass
-            destination_client.send(data) # Send data to the other client
+            if not data.startswith(b"PUBLIC_KEY:"):
+                destination_client.send(data) # Send data to the other client
         except Exception as e:
             print(f"Error: {e}")
             break
@@ -65,6 +82,10 @@ def main():
     #clientB.send(b"STATUS: Please enter your username:")
     usernameB = clientB.recv(1024).decode().strip()
     print(f"Client B's username is: {usernameB}")
+
+
+    #clientB.send(public_keys[clientA])
+    #clientA.send(public_keys[clientB])
 
     # Notify both clients that they are connected
     ready_message = b"STATUS: Both clients have connected. You can start chatting! (enter \"exit\" to quit)"
