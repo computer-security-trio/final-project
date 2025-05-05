@@ -11,6 +11,7 @@ def handle_client(source_client, destination_client, username="Anonymous"):
     while True:
         try:
             data = source_client.recv(8192)
+            print(data)
             if not data:
                 print(f"{username} disconnected.")
                 try: 
@@ -58,7 +59,7 @@ def main():
     print("Created socket object successfully")
 
     # Reserve an arbitrary port for the service
-    port = 12345
+    port = 12346
 
     # Bind the socket to the port
     # Empty string indicates localhost
